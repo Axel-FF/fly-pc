@@ -1,0 +1,89 @@
+-- Fly Script básico y estable
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local flying = false
+local speed = 50 -- Cambia este número si quieres más velocidad
+local bodyVel, bodyGyro
+
+local function startFly()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local humanoid = char:WaitForChild("Humanoid")
+
+    bodyVel = Instance.new("BodyVelocity")
+    bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVel.Velocity = Vector3.zero
+    bodyVel.Parent = hrp
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.P = 9e4
+    bodyGyro.Parent = hrp
+
+    humanoid.PlatformStand = true
+    flying = true
+
+    while flying and char and hrp do
+        local cam = workspace.CurrentCamera
+        local move = Vector3.zero
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            move = move + cam.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            move = move - cam.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            move = move - cam.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            move = move + cam.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            move = move + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            move = move - Vector3.new(0, 1, 0)
+        end
+
+        if move.Magnitude > 0 then
+            bodyVel.Velocity = move.Unit * speed
+        else
+            bodyVel.Velocity = Vector3.zero
+        end
+
+        bodyGyro.CFrame = cam.CFrame
+        RunService.Heartbeat:Wait()
+    end
+end
+
+local function stopFly()
+    flying = false
+    if bodyVel then bodyVel:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+end
+
+-- Tecla F para activar/desactivar
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        if flying then
+            stopFly()
+        else
+            startFly()
+        end
+    end
+end)
+
+print("Fly cargado → Pulsa F para volar")
